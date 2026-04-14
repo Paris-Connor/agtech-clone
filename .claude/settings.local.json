@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export PATH=\"/Users/mpcr/Desktop/AG_Tech/bin:$PATH\")",
+      "Bash(arduino-cli upload:*)"
+    ]
+  }
+}
