@@ -1,119 +1,85 @@
-# AI-For-Science-2026
+# AgTech - Smart Plant Monitoring System
 
-##[Webserver](https://paris-connor.github.io/AI-For-Science-2026/)
-### Demos
-.[ChatGPTDrum.html](https://paris-connor.github.io/AI-For-Science-2026/ChatGPTDrum.html)
-.[GeminiDrums.html](https://paris-connor.github.io/AI-For-Science-2026/GeminiDrums.html)
-.[GrokDrum.html](https://paris-connor.github.io/AI-For-Science-2026/GrokDrum.html)
-.[ClaudeDrum.html](https://paris-connor.github.io/AI-For-Science-2026/ClaudeDrum.html)
+Environmental monitoring system using a Wemos D1 Mini (ESP8266) with DHT11 sensor, RGB status LED, and a live web dashboard.
 
----
+## Features
 
-# AG Tech - ESP8266 Environmental Monitor
-
-Environmental monitoring system using a Wemos D1 Mini (ESP8266) and DHT11 sensor with a live web dashboard.
+- **Live web dashboard** with temperature and humidity graphs
+- **RGB LED status indicator** — green (ok), yellow (warning), red (danger)
+- **Configurable thresholds** for temperature and humidity
+- **Event log** with color-coded alerts
+- **Ready for expansion** — soil moisture probe, light sensor (GY-30)
 
 ## Hardware
 
-| Component | Details |
-|-----------|---------|
-| Board | Wemos D1 Mini (ESP8266EX, 4MB flash) |
-| Sensor | DHT11 (temperature & humidity) |
-| USB Chip | FTDI (serial port: `/dev/cu.usbserial-A50285BI`) |
-| MAC | `f4:cf:a2:e4:3a:4d` |
+| Component | Pin | Details |
+|-----------|-----|---------|
+| DHT11 (temp/humidity) | D5 (GPIO14) | Data pin, VCC to 3.3V |
+| RGB LED - Red | D6 (GPIO12) | 220 ohm resistor |
+| RGB LED - Green | D7 (GPIO13) | 220 ohm resistor |
+| RGB LED - Blue | D1 (GPIO5) | 220 ohm resistor |
+| RGB LED - GND | GND | Common cathode (long leg) |
 
-## Wiring
+## Thresholds
 
-```
-DHT11          D1 Mini
-─────          ───────
-VCC  ────────  3.3V
-DATA ────────  D5 (GPIO14)
-GND  ────────  GND
-```
-
-If using a raw 4-pin DHT11 (not a module), add a 10k ohm pull-up resistor between DATA and VCC.
-
-## Project Structure
-
-```
-AG_Tech/
-├── led_blink/          # Step 1: LED blink test sketch
-│   └── led_blink.ino
-├── dht11_test/         # Step 2: DHT11 serial output test
-│   └── dht11_test.ino
-├── dashboard/          # Step 3: Full web dashboard
-│   ├── dashboard.ino
-│   ├── config.h        # Your WiFi credentials (git-ignored)
-│   └── config.example.h
-├── sensor_scan/        # Utility: detect connected sensors
-│   └── sensor_scan.ino
-├── docs/
-│   ├── SETUP.md        # Installation & setup guide
-│   ├── WIRING.md       # Pin reference & wiring diagrams
-│   └── API.md          # Dashboard JSON API reference
-├── .gitignore
-└── README.md
-```
+| Sensor | OK (Green) | Warning (Yellow) | Danger (Red) |
+|--------|-----------|-----------------|-------------|
+| Temperature | 10-30 C | 5-10 / 30-35 C | <5 / >35 C |
+| Humidity | 30-70% | 20-30 / 70-80% | <20 / >80% |
 
 ## Quick Start
 
-### 1. Install arduino-cli
-
 ```bash
+# Install arduino-cli
 curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | BINDIR=./bin sh
 export PATH="./bin:$PATH"
-```
 
-### 2. Install ESP8266 board support
-
-```bash
+# Install ESP8266 board + libraries
 arduino-cli config init
 arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com/stable/package_esp8266com_index.json
 arduino-cli core update-index
 arduino-cli core install esp8266:esp8266
-```
-
-### 3. Install libraries
-
-```bash
 arduino-cli lib install "DHT sensor library" "Adafruit Unified Sensor"
-```
 
-### 4. Configure WiFi
-
-```bash
+# Configure WiFi
 cp dashboard/config.example.h dashboard/config.h
-# Edit dashboard/config.h with your WiFi SSID and password
-```
+# Edit config.h with your WiFi SSID and password
 
-### 5. Compile and upload
-
-```bash
+# Compile and upload
 arduino-cli compile --fqbn esp8266:esp8266:d1_mini dashboard
-arduino-cli upload --fqbn esp8266:esp8266:d1_mini --port /dev/cu.usbserial-A50285BI dashboard
+arduino-cli upload --fqbn esp8266:esp8266:d1_mini --port /dev/cu.usbserial-XXXXXXXX dashboard
 ```
 
-### 6. Open the dashboard
+Open the IP shown in serial output (115200 baud) in your browser.
 
-Check serial output for the IP address (115200 baud), then open `http://<IP>` in a browser.
+## Project Structure
 
-## Dashboard Features
+```
+AgTech/
+├── dashboard/          # Main plant monitor (DHT11 + RGB LED + web UI)
+│   ├── dashboard.ino
+│   ├── config.h        # WiFi credentials (git-ignored)
+│   └── config.example.h
+├── led_blink/          # LED blink test
+├── dht11_test/         # DHT11 serial test
+├── rgb_test/           # RGB LED color test
+├── sensor_scan/        # Auto-detect connected sensors
+├── docs/
+│   ├── SETUP.md
+│   ├── WIRING.md
+│   └── API.md
+└── README.md
+```
 
-- **Live temperature & humidity cards** - updates every 2 seconds
-- **Real-time line graphs** - scrolling history of last ~4 minutes (120 readings)
-- **Event log** - timestamped reading log in the browser
-- **Serial output** - all readings also printed at 115200 baud
-- **JSON API** - `GET /data` returns current + historical readings
+## Next Steps
+
+- [ ] Add soil moisture sensor (analog, A0)
+- [ ] Add GY-30 light intensity sensor (I2C, D1/D2)
+- [ ] Data logging to SD card or cloud
+- [ ] Connect to real plant for field testing
 
 ## Apple Silicon Note
-
-The ESP8266 toolchain requires Rosetta 2 on Apple Silicon Macs:
 
 ```bash
 softwareupdate --install-rosetta --agree-to-license
 ```
-
-## License
-
-MIT
