@@ -4,7 +4,8 @@
       "Bash(export PATH=\"/Users/mpcr/Desktop/AG_Tech/bin:$PATH\")",
       "Bash(arduino-cli upload:*)",
       "Read(//dev/**)",
-      "Bash(arduino-cli board:*)"
+      "Bash(arduino-cli board:*)",
+      "WebFetch(domain:thingspeak.mathworks.com)"
     ]
   }
 }
