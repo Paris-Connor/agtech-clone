@@ -1,8 +1,9 @@
 // AG Tech - Environmental Monitor Dashboard
 // D1 Mini (ESP8266)
 // DHT11: D5 (GPIO14) - Temperature & Humidity
-// GY-30 (BH1750): D1 (SCL), D2 (SDA) - Light Intensity
-// Soil Moisture: A0 - Soil Moisture %
+// GY-30 (BH1750): D1 (SCL), D2 (SDA) - Light Intensity (if available)
+// TK20 Light Sensor: A0 - Analog light intensity
+// Soil Moisture: A0 - (swap with TK20 when soil probe available)
 // RGB LED: Red=D6 (GPIO12), Green=D7 (GPIO13), Blue=D8 (GPIO15)
 // Common cathode (long leg to GND)
 
@@ -61,10 +62,16 @@ bool lightSensorOk=false, soilSensorOk=false;
 void setLED(int r,int g,int b){analogWrite(RED_PIN,r);analogWrite(GREEN_PIN,g);analogWrite(BLUE_PIN,b);}
 
 float readSoilPercent(){
-  int raw=analogRead(SOIL_PIN);
-  if(raw>=1020)return -1;
-  float p=(float)(SOIL_DRY-raw)/(SOIL_DRY-SOIL_WET)*100.0;
-  return p<0?0:(p>100?100:p);
+  // Soil sensor not connected - reserved for future
+  return -1;
+}
+
+float readAnalogLight(){
+  int raw=analogRead(SOIL_PIN);  // A0 shared pin
+  // TK20: 0=dark, 1023=bright. Approximate lux mapping.
+  // Raw 0-1023 roughly maps to 0-1000 lux for indoor use
+  float lux=(float)raw/1023.0*1000.0;
+  return lux;
 }
 
 String evaluateStatus(float t,float h,float l,float s){
@@ -406,6 +413,7 @@ void loop(){
     float h=dht.readHumidity();float t=dht.readTemperature(true);
     float lux=-1;float soil=-1;
     if(lightSensorOk){lux=lightMeter.readLightLevel();if(lux<0)lux=0;}
+    else{lux=readAnalogLight();lightSensorOk=true;}  // Use TK20 on A0
     soil=readSoilPercent();soilSensorOk=(soil>=0);
     if(!isnan(h)&&!isnan(t)){
       currentTemp=t;currentHum=h;currentLux=lux;currentSoil=soil;
