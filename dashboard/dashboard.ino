@@ -153,6 +153,12 @@ canvas{width:100%!important;height:85px!important}
 .th-label{color:#6b8f6b}
 .th-ok{color:#16a34a}
 .th-warn{color:#ca8a04}
+.cam-section{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;border:1px solid #c8e0c8;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.cam-img{width:100%;border-radius:8px;border:1px solid #d4e8d4;background:#e8f0e8;min-height:120px;display:block}
+.cam-setup{display:flex;gap:6px;margin-top:8px}
+.cam-setup input{flex:1;padding:6px 10px;border-radius:6px;border:1px solid #b0d0b0;background:#f8fcf8;color:#1a3a1a;font-size:.8em}
+.cam-setup button{padding:6px 12px;border-radius:6px;border:none;background:#2d6a2d;color:#fff;font-size:.8em;cursor:pointer}
+.cam-off{text-align:center;color:#8aaa8a;font-size:.8em;padding:30px 0}
 .led-info{margin-top:14px;font-size:.75em;color:#6b8f6b;text-align:center}
 .led-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 2px;vertical-align:middle}
 </style>
@@ -195,6 +201,14 @@ canvas{width:100%!important;height:85px!important}
 </div>
 </div>
 <div class="side">
+<div class="cam-section">
+<div class="section-title">Plant Camera</div>
+<div id="camView"><div class="cam-off">Enter ESP32-CAM IP below</div></div>
+<div class="cam-setup">
+<input type="text" id="camIP" placeholder="ESP32-CAM IP">
+<button onclick="setCam()">Connect</button>
+</div>
+</div>
 <div class="side-section">
 <div class="plant-name" id="pn">Fittonia</div>
 <div class="plant-aka" id="pa">Nerve Plant</div>
@@ -326,6 +340,17 @@ function fs(){
     entry.textContent=msg;log.insertBefore(entry,log.firstChild);
     if(log.children.length>50)log.removeChild(log.lastChild);
   }).catch(()=>{});
+}
+function setCam(){
+  let ip=document.getElementById('camIP').value.trim();
+  if(!ip)return;
+  let v=document.getElementById('camView');
+  let img=document.createElement('img');
+  img.className='cam-img';
+  img.src='http://'+ip+'/capture?'+Date.now();
+  img.onerror=function(){v.innerHTML='<div class="cam-off">Cannot reach camera</div>';};
+  v.innerHTML='';v.appendChild(img);
+  setInterval(()=>{img.src='http://'+ip+'/capture?'+Date.now();},30000);
 }
 setPlant();fs();setInterval(fs,2000);
 </script>

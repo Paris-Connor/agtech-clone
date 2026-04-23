@@ -124,6 +124,14 @@ canvas{width:100%!important;height:85px!important}
 </div>
 <div class="side">
 <div class="side-section">
+<div class="section-title">Plant Camera</div>
+<div id="camView"><div style="text-align:center;color:#8aaa8a;font-size:.8em;padding:30px 0">Enter ESP32-CAM IP below</div></div>
+<div style="display:flex;gap:6px;margin-top:8px">
+<input type="text" id="camIP" placeholder="ESP32-CAM IP" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid #b0d0b0;background:#f8fcf8;color:#1a3a1a;font-size:.8em">
+<button onclick="setCam()" style="padding:6px 12px;border-radius:6px;border:none;background:#2d6a2d;color:#fff;font-size:.8em;cursor:pointer">Connect</button>
+</div>
+</div>
+<div class="side-section">
 <div class="plant-name" id="pn">Fittonia</div>
 <div class="plant-aka" id="pa">Nerve Plant</div>
 <div class="plant-desc" id="pd">A tropical plant known for its striking veined leaves. Thrives in warm, humid environments with indirect light. Prefers consistently moist soil but not waterlogged. Great for terrariums.</div>
@@ -335,6 +343,19 @@ function tick(){
     display(genDemo());
   }
 }
+function setCam(){
+  let ip=document.getElementById('camIP').value.trim();
+  if(!ip)return;
+  localStorage.setItem('agtech_cam_ip',ip);
+  let v=document.getElementById('camView');
+  let img=document.createElement('img');
+  img.style.cssText='width:100%;border-radius:8px;border:1px solid #d4e8d4;background:#e8f0e8;display:block';
+  img.src='http://'+ip+'/capture?'+Date.now();
+  img.onerror=function(){v.innerHTML='<div style="text-align:center;color:#8aaa8a;font-size:.8em;padding:30px 0">Cannot reach camera</div>';};
+  v.innerHTML='';v.appendChild(img);
+  setInterval(()=>{img.src='http://'+ip+'/capture?'+Date.now();},30000);
+}
+(function(){let cip=localStorage.getItem('agtech_cam_ip');if(cip){document.getElementById('camIP').value=cip;setCam();}})();
 setPlant();tick();setInterval(tick,mode==='cloud'?15000:2000);
 </script>
 </body></html>
