@@ -2,8 +2,8 @@
 // D1 Mini (ESP8266)
 // DHT11: D5 (GPIO14) - Temperature & Humidity
 // GY-30 (BH1750): D1 (SCL), D2 (SDA) - Light Intensity (if available)
-// TK20 Light Sensor: A0 - Analog light intensity
-// Soil Moisture: A0 - (swap with TK20 when soil probe available)
+// TK20 Light Sensor: D2 (GPIO4) - Digital bright/dark
+// Soil Moisture: A0 - Analog soil probe
 // RGB LED: Red=D6 (GPIO12), Green=D7 (GPIO13), Blue=D8 (GPIO15)
 // Common cathode (long leg to GND)
 
@@ -25,26 +25,29 @@ const char* password = WIFI_PASS;
 #define DHTPIN    14
 #define DHTTYPE DHT11
 #define SOIL_PIN  A0
+#define LIGHT_DIGITAL_PIN 4  // D2 (GPIO4) - TK20 digital out
 #define SOIL_DRY  1023
 #define SOIL_WET  300
 
 // Default thresholds (Fittonia) for LED
-#define TEMP_WARN_HIGH   78.0
+// Fittonia thresholds (matches dashboard JS)
+#define TEMP_WARN_HIGH   75.0
 #define TEMP_DANGER_HIGH 85.0
-#define TEMP_WARN_LOW    60.0
+#define TEMP_WARN_LOW    65.0
 #define TEMP_DANGER_LOW  55.0
 #define HUM_WARN_HIGH    65.0
 #define HUM_DANGER_HIGH  75.0
-#define HUM_WARN_LOW     35.0
+#define HUM_WARN_LOW     45.0
 #define HUM_DANGER_LOW   25.0
 #define LUX_WARN_LOW     200.0
 #define LUX_DANGER_LOW   100.0
 #define LUX_WARN_HIGH   1200.0
 #define LUX_DANGER_HIGH 2000.0
+// Fittonia soil thresholds (matches dashboard JS)
 #define SOIL_WARN_LOW    40.0
 #define SOIL_DANGER_LOW  25.0
-#define SOIL_WARN_HIGH   85.0
-#define SOIL_DANGER_HIGH 95.0
+#define SOIL_WARN_HIGH   75.0
+#define SOIL_DANGER_HIGH 85.0
 
 DHT dht(DHTPIN, DHTTYPE);
 BH1750 lightMeter;
@@ -57,21 +60,15 @@ int readIndex=0, totalReadings=0;
 unsigned long lastRead=0, lastThingSpeak=0;
 float currentTemp=0,currentHum=0,currentLux=0,currentSoil=0;
 String currentStatus="ok";
-bool lightSensorOk=false, soilSensorOk=false;
+bool lightSensorOk=false, soilSensorOk=false, usingTK20=false;
 
 void setLED(int r,int g,int b){analogWrite(RED_PIN,r);analogWrite(GREEN_PIN,g);analogWrite(BLUE_PIN,b);}
 
 float readSoilPercent(){
-  // Soil sensor not connected - reserved for future
-  return -1;
-}
-
-float readAnalogLight(){
-  int raw=analogRead(SOIL_PIN);  // A0 shared pin
-  // TK20: 0=dark, 1023=bright. Approximate lux mapping.
-  // Raw 0-1023 roughly maps to 0-1000 lux for indoor use
-  float lux=(float)raw/1023.0*1000.0;
-  return lux;
+  int raw=analogRead(SOIL_PIN);
+  if(raw>=1020)return -1;
+  float p=(float)(SOIL_DRY-raw)/(SOIL_DRY-SOIL_WET)*100.0;
+  return p<0?0:(p>100?100:p);
 }
 
 String evaluateStatus(float t,float h,float l,float s){
@@ -86,7 +83,7 @@ String evaluateStatus(float t,float h,float l,float s){
 
 void updateLED(String s){
   if(s=="danger")setLED(1023,0,0);
-  else if(s=="warn")setLED(1023,512,0);
+  else if(s=="warn")setLED(1023,50,0);
   else setLED(0,1023,0);
 }
 
@@ -388,10 +385,12 @@ void setup(){
   Serial.println("\n--- AG Tech Plant Monitor ---");
   pinMode(RED_PIN,OUTPUT);pinMode(GREEN_PIN,OUTPUT);pinMode(BLUE_PIN,OUTPUT);
   setLED(0,0,0);
+  pinMode(LIGHT_DIGITAL_PIN, INPUT);
   dht.begin();
-  Wire.begin(4,5);
-  if(lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)){lightSensorOk=true;Serial.println("GY-30 found!");}
-  else Serial.println("GY-30 not found");
+  // GY-30 disabled - using TK20 digital light on D2 instead
+  // Wire.begin(4,5);
+  // if(lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE)){lightSensorOk=true;Serial.println("GY-30 found!");}
+  Serial.println("Using TK20 digital light sensor on D2");
   float st=readSoilPercent();
   if(st>=0){soilSensorOk=true;Serial.println("Soil sensor found!");}
   else Serial.println("Soil sensor not found");
@@ -412,8 +411,10 @@ void loop(){
     lastRead=millis();
     float h=dht.readHumidity();float t=dht.readTemperature(true);
     float lux=-1;float soil=-1;
-    if(lightSensorOk){lux=lightMeter.readLightLevel();if(lux<0)lux=0;}
-    else{lux=readAnalogLight();lightSensorOk=true;}  // Use TK20 on A0
+    // TK20 digital light sensor on D2
+    int lightVal=digitalRead(LIGHT_DIGITAL_PIN);
+    lux=lightVal?1000.0:100.0;
+    lightSensorOk=true;
     soil=readSoilPercent();soilSensorOk=(soil>=0);
     if(!isnan(h)&&!isnan(t)){
       currentTemp=t;currentHum=h;currentLux=lux;currentSoil=soil;
