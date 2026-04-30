@@ -413,7 +413,7 @@ void loop(){
     float lux=-1;float soil=-1;
     // TK20 digital light sensor on D2
     int lightVal=digitalRead(LIGHT_DIGITAL_PIN);
-    lux=lightVal?1000.0:100.0;
+    lux=lightVal?100.0:1000.0;  // LM393: LOW=bright, HIGH=dark
     lightSensorOk=true;
     soil=readSoilPercent();soilSensorOk=(soil>=0);
     if(!isnan(h)&&!isnan(t)){
